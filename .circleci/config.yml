@@ -111,36 +111,36 @@ jobs:
 workflows:
   version: 2
 
-  # Workflow for feature branches (triggers on push to feature/*)
-  feature_workflow:
+  # Workflow for devops branches (triggers on push to devops/*)
+  devops_workflow:
     jobs:
       - build-backend:
           filters:
             branches:
-              only: /feature\/.*/
+              only: feature
       - test-backend:
           requires: [build-backend]
           filters:
             branches:
-              only: /feature\/.*/
+              only: feature
       - build-frontend:
           filters:
             branches:
-              only: /feature\/.*/
+              only: feature
       - test-frontend:
           requires: [build-frontend]
           filters:
             branches:
-              only: /feature\/.*/
+              only: /devops\/.*/
 
-  # Workflow for QA branch (triggers on schedule and potentially push to qa)
+  # Workflow for QA branch (triggers on schedule and potentially push to QA)
   qa_workflow:
     triggers:
       - schedule:
           cron: "0 9 * * *" # At 9:00 AM daily
           filters:
             branches:
-              only: qa
+              only: QA
     jobs:
       - build-backend
       - test-backend:
