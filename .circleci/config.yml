@@ -1,0 +1,179 @@
+# CircleCI Config Version
+version: 2.1
+
+# Orbs (reusable packages)
+orbs:
+  # Using Node orb @5.0 as specified in your second code block
+  node: circleci/node@5.0 # Consider updating to @5.1
+
+# Executors (define environments)
+executors:
+  node-executor:
+    docker:
+      # Using a Node.js LTS image
+      - image: cimg/node:18.17 # Or cimg/node:20.10 for Node 20 LTS
+
+# Custom Commands (refactored common steps)
+commands:
+  install-backend:
+    steps:
+      - checkout # Checkout the code
+      - restore_cache: # Restore cached node_modules if available
+          key: backend-{{ checksum "backend/package.json" }}
+      - run:
+          name: Install Backend Dependencies
+          command: |
+            cd backend
+            npm install # Install dependencies
+      - save_cache: # Save node_modules to cache
+          key: backend-{{ checksum "backend/package.json" }}
+          paths:
+            - backend/node_modules # Path to cache
+
+  install-frontend:
+    steps:
+      - checkout # Checkout the code
+      - restore_cache: # Restore cached node_modules if available
+          key: frontend-{{ checksum "frontend/package.json" }}
+      - run:
+          name: Install Frontend Dependencies
+          command: |
+            cd frontend
+            npm install # Install dependencies
+      - save_cache: # Save node_modules to cache
+          key: frontend-{{ checksum "frontend/package.json" }}
+          paths:
+            - frontend/node_modules # Path to cache
+
+# Jobs (define sequences of steps)
+jobs:
+
+  build-backend:
+    executor: node-executor
+    steps:
+      - install-backend # Use the custom command
+      - run:
+          name: Build Backend
+          command: echo "✅ Backend build complete!"
+          # Add your actual backend build command here (if any)
+
+  test-backend:
+    executor: node-executor
+    steps:
+      - install-backend # Use the custom command (includes cache restore)
+      - run:
+          name: Run Backend Tests
+          command: |
+            cd backend
+            npm test # Run tests
+      - run:
+          name: Test Status
+          command: echo "🧪 Backend tests passed!"
+
+  build-frontend:
+    executor: node-executor
+    steps:
+      - install-frontend # Use the custom command
+      - run:
+          name: Build Frontend
+          command: |
+            cd frontend
+            npm run build # Run frontend build
+      - run:
+          name: Build Status
+          command: echo "✅ Frontend build complete!"
+
+  test-frontend:
+    executor: node-executor
+    steps:
+      - install-frontend # Use the custom command (includes cache restore)
+      - run:
+          name: Run Frontend Tests
+          command: |
+            cd frontend
+            npm test # Run tests
+      - run:
+          name: Test Status
+          command: echo "🧪 Frontend tests passed!"
+
+  deploy-sim:
+    executor: node-executor
+    steps:
+      - checkout # Checkout the code
+      - run:
+          name: Simulated Production Deployment
+          command: |
+            echo "🚀 Merged to main branch: $CIRCLE_BRANCH"
+            echo "✅ Production deployment triggered. Notifying team..."
+            echo "🔔 Deployment Successful to Production Environment"
+
+# Workflows (orchestrate jobs)
+workflows:
+  version: 2
+
+  # Workflow for feature branches (triggers on push to feature/*)
+  feature_workflow:
+    jobs:
+      - build-backend:
+          filters:
+            branches:
+              only: /feature\/.*/
+      - test-backend:
+          requires: [build-backend]
+          filters:
+            branches:
+              only: /feature\/.*/
+      - build-frontend:
+          filters:
+            branches:
+              only: /feature\/.*/
+      - test-frontend:
+          requires: [build-frontend]
+          filters:
+            branches:
+              only: /feature\/.*/
+
+  # Workflow for QA branch (triggers on schedule and potentially push to qa)
+  qa_workflow:
+    triggers:
+      - schedule:
+          cron: "0 9 * * *" # At 9:00 AM daily
+          filters:
+            branches:
+              only: qa
+    jobs:
+      - build-backend
+      - test-backend:
+          requires: [build-backend]
+      - build-frontend
+      - test-frontend:
+          requires: [build-frontend]
+      - deploy-sim:
+          requires: [test-backend, test-frontend]
+
+  # Workflow for production branch (triggers on push to main)
+  production_workflow:
+    jobs:
+      - build-backend:
+          filters:
+            branches:
+              only: main
+      - test-backend:
+          requires: [build-backend]
+          filters:
+            branches:
+              only: main
+      - build-frontend:
+          filters:
+            branches:
+              only: main
+      - test-frontend:
+          requires: [build-frontend]
+          filters:
+            branches:
+              only: main
+      - deploy-sim:
+          requires: [test-backend, test-frontend]
+          filters:
+            branches:
+              only: main
