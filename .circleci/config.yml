@@ -135,12 +135,10 @@ workflows:
 
   # Workflow for QA branch (triggers on schedule and potentially push to QA)
   qa_workflow:
-    triggers:
-      - schedule:
-          cron: "0 9 * * *" # At 9:00 AM daily
-          filters:
-            branches:
-              only: QA
+    build:
+        filters:
+          branches:
+            only: QA
     jobs:
       - build-backend
       - test-backend:
