@@ -131,7 +131,7 @@ workflows:
           requires: [build-frontend]
           filters:
             branches:
-              only: /devops\/.*/
+              only: feature
 
   # Workflow for QA branch (triggers on schedule and potentially push to QA)
   qa_workflow:
