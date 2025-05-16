@@ -135,19 +135,36 @@ workflows:
 
   # Workflow for QA branch (triggers on schedule and potentially push to QA)
   qa_workflow:
-    build:
-        filters:
-          branches:
-            only: QA
     jobs:
-      - build-backend
+      - build-backend:
+          filters:
+            branches:
+              only: QA
       - test-backend:
-          requires: [build-backend]
-      - build-frontend
+          requires:
+            - build-backend
+          filters:
+            branches:
+              only: QA
+      - build-frontend:
+          filters:
+            branches:
+              only: QA
       - test-frontend:
-          requires: [build-frontend]
+          requires:
+            - build-frontend
+          filters:
+            branches:
+              only: QA
       - deploy-sim:
-          requires: [test-backend, test-frontend]
+          requires:
+            - test-backend
+            - test-frontend
+          filters:
+            branches:
+              only: QA
+          context: deploy
+          serial-group: QA
 
   # Workflow for production branch (triggers on push to main)
   production_workflow:
