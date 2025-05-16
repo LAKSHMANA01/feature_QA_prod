@@ -5,7 +5,7 @@ function App() {
   
   
   <h1>Hello from React App!</h1>;
-  <p>This is a simple React application.</p>
+  <p>This is a simple React application..</p>
   
   </>
   
